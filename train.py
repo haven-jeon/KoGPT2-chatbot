@@ -33,6 +33,12 @@ parser.add_argument('--chat',
                     default=False,
                     help='response generation on given user input')
 
+parser.add_argument('--sentiment',
+                    type=str,
+                    default='0',
+                    help='sentiment for system. 0 is neutral, 1 is negative, 2 is positive.')
+
+
 parser.add_argument('--model_params',
                     type=str,
                     default='kogpt2_chat.params',
@@ -43,11 +49,14 @@ parser.add_argument('--train',
                     default=False,
                     help='eval train set (default: False)')
 
-parser.add_argument('--accumulate',
-                    type=int,
-                    default=1,
-                    help='accumulate gradient to achieve the same result with a large batch size')
 
+
+parser.add_argument(
+    '--accumulate',
+    type=int,
+    default=1,
+    help=
+    'accumulate gradient to achieve the same result with a large batch size')
 
 opt = parser.parse_args()
 
@@ -59,6 +68,8 @@ S_TKN = '<sys>'
 BOS = '<s>'
 EOS = '</s>'
 MASK = '<unused0>'
+SENT = '<unused1>'
+
 
 class chat_data(gluon.data.Dataset):
     def __init__(self, chats, tok_path, vocab, max_len=32):
@@ -68,6 +79,7 @@ class chat_data(gluon.data.Dataset):
         self.first = True
         self.q_token = U_TKN
         self.a_token = S_TKN
+        self.sent_token = SENT
         self.bos = BOS
         self.eos = EOS
         self.maskt = MASK
@@ -88,9 +100,12 @@ class chat_data(gluon.data.Dataset):
         turn = self._data.iloc[idx]
         q = turn['Q']
         a = turn['A']
+        sentiment = str(turn['label'])
         q_toked = [
             self.q_token,
         ] + self.tokenizer(q) + [
+            self.eos,
+        ] + [self.sent_token] + self.tokenizer(sentiment) + [
             self.eos,
         ]
         q_len = len(q_toked)
@@ -122,10 +137,7 @@ class chat_data(gluon.data.Dataset):
 
 
 class KoGPT2Chat(nn.HybridBlock):
-    def __init__(self,
-                 kogpt2,
-                 prefix=None,
-                 params=None):
+    def __init__(self, kogpt2, prefix=None, params=None):
         super(KoGPT2Chat, self).__init__(prefix=prefix, params=params)
         self.kogpt2 = kogpt2
 
@@ -152,10 +164,10 @@ def train():
     train_set = chat_data(data, tok_path, vocab, max_len=max_len)
     batch_size = opt.batch_size
 
-    train_dataloader = mx.gluon.data.DataLoader(
-        train_set,
-        batch_size=batch_size,
-        num_workers=5, shuffle=True)
+    train_dataloader = mx.gluon.data.DataLoader(train_set,
+                                                batch_size=batch_size,
+                                                num_workers=5,
+                                                shuffle=True)
     kogptqa = KoGPT2Chat(model)
     kogptqa.hybridize()
 
@@ -165,10 +177,11 @@ def train():
 
     num_epochs = opt.num_epoch
     lr = 5e-5
-    trainer = gluon.Trainer(
-        kogptqa.collect_params(),
-        'bertadam',
-        {'learning_rate': lr, 'epsilon': 1e-8, 'wd':0.01})
+    trainer = gluon.Trainer(kogptqa.collect_params(), 'bertadam', {
+        'learning_rate': lr,
+        'epsilon': 1e-8,
+        'wd': 0.01
+    })
     # LayerNorm과 Bias에는 Weight Decay를 적용하지 않는다.
     for _, v in kogptqa.collect_params('.*beta|.*gamma|.*bias').items():
         v.wd_mult = 0.0
@@ -199,7 +212,8 @@ def train():
                 new_lr = lr * step_num / num_warmup_steps
             else:
                 non_warmup_steps = step_num - num_warmup_steps
-                offset = non_warmup_steps / (num_train_steps - num_warmup_steps)
+                offset = non_warmup_steps / (num_train_steps -
+                                             num_warmup_steps)
                 new_lr = lr - offset * lr
             trainer.set_learning_rate(new_lr)
             with mx.autograd.record():
@@ -210,10 +224,11 @@ def train():
                 # forward computation
                 out = kogptqa(token_ids)
                 masked_out = nd.where(
-                    mask.expand_dims(axis=2).repeat(repeats=out.shape[2], axis=2),
-                    out, neg * nd.ones_like(out))
+                    mask.expand_dims(axis=2).repeat(repeats=out.shape[2],
+                                                    axis=2), out,
+                    neg * nd.ones_like(out))
                 # loss for responses exincluding MASK and PAD
-                ls = loss_function(masked_out, label).sum()/mask.sum()
+                ls = loss_function(masked_out, label).sum() / mask.sum()
             # backward computation
             ls.backward()
             if not accumulate or (batch_id + 1) % accumulate == 0:
@@ -226,22 +241,23 @@ def train():
                     all_model_params.zero_grad()
             step_loss += ls.asscalar()
             if step_num % log_interval == 0 and step_num > 0:
-                print('[Epoch {} Batch {}/{}] loss={:.4f}, lr={:.10f}, train ppl={:.3f}'
-                      .format(epoch_id + 1, batch_id + 1, len(train_dataloader),
-                              step_loss / log_interval,
-                              trainer.learning_rate, math.exp(step_loss / log_interval))
-                )
+                print(
+                    '[Epoch {} Batch {}/{}] loss={:.4f}, lr={:.10f}, train ppl={:.3f}'
+                    .format(epoch_id + 1, batch_id + 1, len(train_dataloader),
+                            step_loss / log_interval, trainer.learning_rate,
+                            math.exp(step_loss / log_interval)))
                 step_loss = 0
     logging.info('saving model file to {}'.format(opt.model_params))
     kogptqa.save_parameters(opt.model_params)
 
 
-def chat(model_params):
+def chat(model_params, sent='0'):
     tok_path = get_tokenizer()
     model, vocab = get_mxnet_kogpt2_model(ctx=ctx)
     tok = SentencepieceTokenizer(tok_path, num_best=0, alpha=0)
     kogptqa = KoGPT2Chat(model)
     kogptqa.load_parameters(model_params, ctx=ctx)
+    sent_tokens = tok(sent)
     while 1:
         q = input('user > ').strip()
         if q == 'quit':
@@ -250,9 +266,15 @@ def chat(model_params):
         a = ''
         a_tok = []
         while 1:
-            input_ids = mx.nd.array([vocab[U_TKN]] + vocab[q_tok] + vocab[EOS, S_TKN] + vocab[a_tok]).expand_dims(axis=0)
+            input_ids = mx.nd.array([vocab[U_TKN]] + vocab[q_tok] +
+                                    vocab[EOS, SENT] + vocab[sent_tokens] + 
+                                    vocab[EOS, S_TKN] +
+                                    vocab[a_tok]).expand_dims(axis=0)
             pred = kogptqa(input_ids.as_in_context(ctx))
-            gen = vocab.to_tokens(mx.nd.argmax(pred, axis=-1).squeeze().astype('int').asnumpy().tolist())[-1]
+            gen = vocab.to_tokens(
+                mx.nd.argmax(
+                    pred,
+                    axis=-1).squeeze().astype('int').asnumpy().tolist())[-1]
             if gen == EOS:
                 break
             a += gen.replace('▁', ' ')
@@ -264,4 +286,4 @@ if __name__ == "__main__":
     if opt.train:
         train()
     if opt.chat:
-        chat(opt.model_params)
+        chat(opt.model_params, opt.sentiment)
