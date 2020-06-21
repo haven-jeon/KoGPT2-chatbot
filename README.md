@@ -8,18 +8,25 @@
 
 ## Architecture
 
-![arch](imgs/simsimi.png)
+
+<img src="imgs/simsimi.png" alt="drawing" style="width:600px;"/>
+
 
 - 데이터의 Q를 `<usr>`발화 A를 `<sys>`발화로 매핑하고 $P(<sys>|<usr>)$를 최대화 할 수 있는 모델을 학습한다.
 
 
 ## Install
 
+- `MXNet`은 [링크](https://mxnet.apache.org/get_started?)를 참고하여 시스템에 맞는 버전으로 설치한다.
+
 ```python
-git clone --recurse-submodules https://github.com/haven-jeon/KoGPT2-chatbot.git
-pip3 install mxnet, gluonnlp, sentencepiece
+pip3 install mxnet-cuXX
+pip3 install gluonnlp, sentencepiece, pandas
 pip3 install git+https://github.com/SKT-AI/KoGPT2#egg=kogpt2
+git clone --recurse-submodules https://github.com/haven-jeon/KoGPT2-chatbot.git
+
 ```
+
 
 ## How to Train
 
