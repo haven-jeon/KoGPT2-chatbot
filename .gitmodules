@@ -1,0 +1,3 @@
+[submodule "Chatbot_data"]
+	path = Chatbot_data
+	url = https://github.com/haven-jeon/Chatbot_data.git
