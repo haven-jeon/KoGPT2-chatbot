@@ -3,7 +3,7 @@
 
 ## Purpose
 
-- 공개된 한글 체팅 데이터와 pre-trained `KoGPT2`를 이용한 간단한 쳇봇 구축
+- [공개된 한글 체팅 데이터](https://github.com/songys/Chatbot_data)와 pre-trained [KoGPT2](https://github.com/SKT-AI/KoGPT2)를 이용한 간단한 쳇봇 실험
 - `KoGPT2`의 다양한 활용 가능성 확인
 
 ## Architecture
@@ -12,7 +12,7 @@
 <img src="imgs/simsimi.png" alt="drawing" style="width:600px;"/>
 
 
-- 데이터의 Q를 `<usr>`발화 A를 `<sys>`발화로 매핑하고 $P(<sys>|<usr>)$를 최대화 할 수 있는 모델을 학습한다.
+- 데이터의 Q 필드를 `<usr>`발화 A 필드를 `<sys>`발화로 매핑하고 $P(<sys>|<usr>)$를 최대화 할 수 있는 모델을 학습한다.
 
 
 ## Install
@@ -59,3 +59,9 @@ Simsimi > 돈을 많이 버는 것뿐이에요.
 user > 집은 너무 비싼거 같아요.
 Simsimi > 비싸다고 해서 다 좋은 건 아니에요.
 ```
+
+## TODO
+
+- PyTorch 버전 작업, 다양한 generation 방식 테스트
+- 감정 정보를 조건으로 준 응답 생성
+
