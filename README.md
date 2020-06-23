@@ -1,13 +1,30 @@
 
+
+<!-- @import "[TOC]" {cmd="toc" depthFrom=1 depthTo=6 orderedList=false} -->
+
+<!-- code_chunk_output -->
+
+- [Simple Chit-Chat based on KoGPT2](#simple-chit-chat-based-on-kogpt2)
+  - [Purpose](#purpose)
+  - [Architecture](#architecture)
+  - [Install](#install)
+  - [How to Train](#how-to-train)
+  - [How to Chat!](#how-to-chat)
+  - [TODO](#todo)
+
+<!-- /code_chunk_output -->
+
+
 # Simple Chit-Chat based on KoGPT2 
 
 ## Purpose
 
 - [공개된 한글 쳇봇 데이터](https://github.com/songys/Chatbot_data)와 pre-trained [KoGPT2](https://github.com/SKT-AI/KoGPT2)를 이용한 간단한 쳇봇 실험
-- `KoGPT2`의 다양한 활용 가능성 확인
+- `KoGPT2`의 다양한 활용 가능성을 타진하고 성능을 정성적으로 평가한다.
 
 ## Architecture
 
+학습 데이터에 적합하게 [Hello! GPT-2](https://arxiv.org/abs/1907.05774)를 응용해 아래와 같이 아키텍처를 설계함
 
 <img src="imgs/simsimi.png" alt="drawing" style="width:600px;"/>
 
