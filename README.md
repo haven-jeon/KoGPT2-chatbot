@@ -24,7 +24,7 @@
 
 ## Architecture
 
-학습 데이터에 적합하게 [Hello! GPT-2](https://arxiv.org/abs/1907.05774)를 응용해 아래와 같이 아키텍처를 설계함
+학습 데이터에 적합하게 [Hello! GPT-2](https://arxiv.org/abs/1907.05774)를 응용, 아래와 같은 아키텍처를 설계함
 
 <img src="imgs/simsimi.png" alt="drawing" style="width:600px;"/>
 
