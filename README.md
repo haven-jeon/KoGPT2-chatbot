@@ -26,7 +26,6 @@ git clone --recurse-submodules https://github.com/haven-jeon/KoGPT2-chatbot.git
 
 ```
 
-
 ## How to Train
 
 ```bash
@@ -58,6 +57,9 @@ Simsimi > 돈을 많이 버는 것뿐이에요.
 user > 집은 너무 비싼거 같아요.
 Simsimi > 비싸다고 해서 다 좋은 건 아니에요.
 ```
+
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/haven-jeon/KoGPT2-chatbot/blob/master/KoGPT2_chatbot.ipynb]
+
 
 ## TODO
 
