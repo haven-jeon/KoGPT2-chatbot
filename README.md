@@ -10,6 +10,7 @@
   - [Install](#install)
   - [How to Train](#how-to-train)
   - [How to Chat!](#how-to-chat)
+  - [Colab tutorials](#colab-tutorials)
   - [TODO](#todo)
 
 <!-- /code_chunk_output -->
@@ -37,10 +38,9 @@
 
 ```python
 pip3 install mxnet-cuXX
-pip3 install gluonnlp, sentencepiece, pandas
+pip3 install gluonnlp sentencepiece pandas torch transformers pytorch_lightning 
 pip3 install git+https://github.com/SKT-AI/KoGPT2#egg=kogpt2
 git clone --recurse-submodules https://github.com/haven-jeon/KoGPT2-chatbot.git
-
 ```
 
 ## How to Train
@@ -75,12 +75,18 @@ user > 집은 너무 비싼거 같아요.
 Simsimi > 비싸다고 해서 다 좋은 건 아니에요.
 ```
 
- [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/haven-jeon/KoGPT2-chatbot/blob/master/KoGPT2_chatbot.ipynb)
+## Colab tutorials
+
+- PyTorch
+  - [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/haven-jeon/KoGPT2-chatbot/blob/master/KoGPT2_chatbot_pytorch.ipynb)
+- MXNet
+  - [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/haven-jeon/KoGPT2-chatbot/blob/master/KoGPT2_chatbot.ipynb)
 
 
 
 ## TODO
 
 - ~~감정 정보를 조건으로 준 응답 생성~~
-- PyTorch 버전 작업, 다양한 generation 방식 테스트
+- ~~PyTorch 버전 작업~~
+- 다양한 generation 방식 테스트
 
