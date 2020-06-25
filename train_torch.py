@@ -208,7 +208,7 @@ class KoGPT2Chat(LightningModule):
         data = pd.read_csv('Chatbot_data/ChatbotData.csv')
         self.train_set = chat_data(data, self.tok_path, self.vocab, max_len=self.max_len)
         train_dataloader = DataLoader(
-            self.train_set, batch_size=self.batch_size, num_workers=4,
+            self.train_set, batch_size=self.batch_size, num_workers=1,
             shuffle=True, collate_fn=self._collate_fn)
         return train_dataloader
 
@@ -256,7 +256,9 @@ if __name__ == "__main__":
         )
         model = KoGPT2Chat(max_len=opt.max_seq_len, batch_size=opt.batch_size, num_epochs=opt.num_epoch)
         model.train()
-        trainer = Trainer(gpus=1, max_epochs=opt.num_epoch, checkpoint_callback=checkpoint_callback)
+        trainer = Trainer(
+            gpus=1, max_epochs=opt.num_epoch,
+            checkpoint_callback=checkpoint_callback)
         trainer.fit(model)
         logging.info('best model path {}'.format(checkpoint_callback.best_model_path))
     if opt.chat:
