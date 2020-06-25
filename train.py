@@ -50,13 +50,11 @@ parser.add_argument('--train',
                     help='eval train set (default: False)')
 
 
-
 parser.add_argument(
     '--accumulate',
     type=int,
     default=1,
-    help=
-    'accumulate gradient to achieve the same result with a large batch size')
+    help='accumulate gradient to achieve the same result with a large batch size')
 
 opt = parser.parse_args()
 
@@ -267,7 +265,7 @@ def chat(model_params, sent='0'):
         a_tok = []
         while 1:
             input_ids = mx.nd.array([vocab[U_TKN]] + vocab[q_tok] +
-                                    vocab[EOS, SENT] + vocab[sent_tokens] + 
+                                    vocab[EOS, SENT] + vocab[sent_tokens] +
                                     vocab[EOS, S_TKN] +
                                     vocab[a_tok]).expand_dims(axis=0)
             pred = kogptqa(input_ids.as_in_context(ctx))
