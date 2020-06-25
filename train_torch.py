@@ -73,7 +73,7 @@ MASK = '<unused0>'
 SENT = '<unused1>'
 
 
-class chat_data(Dataset):
+class CharDataset(Dataset):
     def __init__(self, chats, tok_path, vocab, max_len=32):
         self._data = chats
         self._tok_path = tok_path
@@ -206,7 +206,7 @@ class KoGPT2Chat(LightningModule):
 
     def train_dataloader(self):
         data = pd.read_csv('Chatbot_data/ChatbotData.csv')
-        self.train_set = chat_data(data, self.tok_path, self.vocab, max_len=self.max_len)
+        self.train_set = CharDataset(data, self.tok_path, self.vocab, max_len=self.max_len)
         train_dataloader = DataLoader(
             self.train_set, batch_size=self.batch_size, num_workers=1,
             shuffle=True, collate_fn=self._collate_fn)

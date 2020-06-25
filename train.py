@@ -69,7 +69,7 @@ MASK = '<unused0>'
 SENT = '<unused1>'
 
 
-class chat_data(gluon.data.Dataset):
+class ChatDataset(gluon.data.Dataset):
     def __init__(self, chats, tok_path, vocab, max_len=32):
         self._data = chats
         self._tok_path = tok_path
@@ -159,7 +159,7 @@ def train():
     data = pd.read_csv('Chatbot_data/ChatbotData.csv')
 
     max_len = opt.max_seq_len
-    train_set = chat_data(data, tok_path, vocab, max_len=max_len)
+    train_set = ChatDataset(data, tok_path, vocab, max_len=max_len)
     batch_size = opt.batch_size
 
     train_dataloader = mx.gluon.data.DataLoader(train_set,
