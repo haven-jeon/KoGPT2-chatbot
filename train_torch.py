@@ -11,26 +11,10 @@ from kogpt2.utils import get_tokenizer
 from pytorch_lightning import Trainer
 from pytorch_lightning.callbacks import ModelCheckpoint
 from pytorch_lightning.core.lightning import LightningModule
-from torch import nn
 from torch.utils.data import DataLoader, Dataset
-from transformers.optimization import AdamW
+from transformers.optimization import AdamW, get_cosine_schedule_with_warmup
 
 parser = argparse.ArgumentParser(description='Simsimi based on KoGPT-2')
-
-parser.add_argument('--num-epoch',
-                    type=int,
-                    default=1,
-                    help='number of iterations to train (default: 2)')
-
-parser.add_argument('--max-seq-len',
-                    type=int,
-                    default=32,
-                    help='max sentence length on input (default: 32)')
-
-parser.add_argument('--batch-size',
-                    type=int,
-                    default=64,
-                    help='batch size for training (default: 64)')
 
 parser.add_argument('--chat',
                     action='store_true',
@@ -42,25 +26,15 @@ parser.add_argument('--sentiment',
                     default='0',
                     help='sentiment for system. 0 is neutral, 1 is negative, 2 is positive.')
 
-
 parser.add_argument('--model_params',
                     type=str,
-                    default='kogpt2_chat.params',
+                    default='model_chp/model_last.ckpt',
                     help='model binary for starting chat')
 
 parser.add_argument('--train',
                     action='store_true',
                     default=False,
-                    help='eval train set (default: False)')
-
-
-parser.add_argument(
-    '--accumulate',
-    type=int,
-    default=1,
-    help='accumulate gradient to achieve the same result with a large batch size')
-
-opt = parser.parse_args()
+                    help='for training')
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
@@ -139,16 +113,36 @@ class CharDataset(Dataset):
 
 
 class KoGPT2Chat(LightningModule):
-    def __init__(self, max_len=32, batch_size=64, lr=5e-5, num_epochs=1):
+    def __init__(self, hparams, **kwargs):
         super(KoGPT2Chat, self).__init__()
-        self.batch_size = batch_size
-        self.lr = lr
-        self.max_len = max_len
+        self.hparams = hparams
         self.tok_path = get_tokenizer()
-        self.num_epochs = num_epochs
         self.neg = -1e18
         self.kogpt2, self.vocab = get_pytorch_kogpt2_model()
         self.loss_function = torch.nn.CrossEntropyLoss(reduction='none')
+
+    @staticmethod
+    def add_model_specific_args(parent_parser):
+        # add model specific args
+        parser = argparse.ArgumentParser(parents=[parent_parser], add_help=False)
+        parser.add_argument('--max-len',
+                            type=int,
+                            default=32,
+                            help='max sentence length on input (default: 32)')
+
+        parser.add_argument('--batch-size',
+                            type=int,
+                            default=96,
+                            help='batch size for training (default: 96)')
+        parser.add_argument('--lr',
+                            type=float,
+                            default=5e-5,
+                            help='The initial learning rate')
+        parser.add_argument('--warmup_ratio',
+                            type=float,
+                            default=0.1,
+                            help='warmup ratio')
+        return parser
 
     def forward(self, inputs):
         # (batch, seq_len, hiddens)
@@ -165,27 +159,6 @@ class KoGPT2Chat(LightningModule):
         tensorboard_logs = {'train_loss': loss_avg}
         return {'loss': loss_avg, 'log': tensorboard_logs}
 
-    # learning rate warm-up
-    def optimizer_step(self, current_epoch, batch_idx, optimizer,
-                       optimizer_idx, second_order_closure=None):
-        # warm up lr
-        num_train_steps = int(len(self.train_set) / self.batch_size * self.num_epochs)
-        warmup_ratio = 0.1
-        num_warmup_steps = int(num_train_steps * warmup_ratio)
-        # update params
-        step_num = self.trainer.global_step
-        for pg in optimizer.param_groups:
-            if step_num < num_warmup_steps:
-                new_lr = self.lr * step_num / num_warmup_steps
-            else:
-                non_warmup_steps = step_num - num_warmup_steps
-                offset = non_warmup_steps / (num_train_steps - num_warmup_steps)
-                new_lr = self.lr - offset * self.lr
-            pg['lr'] = new_lr
-        nn.utils.clip_grad_norm_(self.parameters(), 1.0)
-        optimizer.step()
-        optimizer.zero_grad()
-
     def configure_optimizers(self):
         # Prepare optimizer
         param_optimizer = list(self.named_parameters())
@@ -195,8 +168,17 @@ class KoGPT2Chat(LightningModule):
             {'params': [p for n, p in param_optimizer if any(nd in n for nd in no_decay)], 'weight_decay': 0.0}
         ]
         optimizer = AdamW(optimizer_grouped_parameters,
-                          lr=self.lr, correct_bias=False)
-        return optimizer
+                          lr=self.hparams.lr, correct_bias=False)
+        # warm up lr
+        num_train_steps = len(self.train_dataloader()) * self.hparams.max_epochs
+        num_warmup_steps = int(num_train_steps * self.hparams.warmup_ratio)
+        scheduler = get_cosine_schedule_with_warmup(
+            optimizer,
+            num_warmup_steps=num_warmup_steps, num_training_steps=num_train_steps)
+        lr_scheduler = {'scheduler': scheduler, 'name': 'cosine_schedule_with_warmup',
+                        'monitor': 'loss', 'interval': 'step',
+                        'frequency': 1}
+        return [optimizer], [lr_scheduler]
 
     def _collate_fn(self, batch):
         data = [item[0] for item in batch]
@@ -206,46 +188,49 @@ class KoGPT2Chat(LightningModule):
 
     def train_dataloader(self):
         data = pd.read_csv('Chatbot_data/ChatbotData.csv')
-        self.train_set = CharDataset(data, self.tok_path, self.vocab, max_len=self.max_len)
+        self.train_set = CharDataset(data, self.tok_path, self.vocab, max_len=self.hparams.max_len)
         train_dataloader = DataLoader(
-            self.train_set, batch_size=self.batch_size, num_workers=2,
+            self.train_set, batch_size=self.hparams.batch_size, num_workers=2,
             shuffle=True, collate_fn=self._collate_fn)
         return train_dataloader
 
-
-def chat(kogptqa, sent='0'):
-    tok_path = get_tokenizer()
-    _, vocab = get_pytorch_kogpt2_model()
-    tok = SentencepieceTokenizer(tok_path, num_best=0, alpha=0)
-    sent_tokens = tok(sent)
-    with torch.no_grad():
-        while 1:
-            q = input('user > ').strip()
-            if q == 'quit':
-                break
-            q_tok = tok(q)
-            a = ''
-            a_tok = []
+    def chat(self, sent='0'):
+        self.tok_path
+        tok = SentencepieceTokenizer(self.tok_path, num_best=0, alpha=0)
+        sent_tokens = tok(sent)
+        with torch.no_grad():
             while 1:
-                input_ids = torch.LongTensor([
-                    vocab[U_TKN]] + vocab[q_tok] +
-                    vocab[EOS, SENT] + vocab[sent_tokens] +
-                    vocab[EOS, S_TKN] +
-                    vocab[a_tok]).unsqueeze(dim=0)
-                pred = kogptqa(input_ids)
-                gen = vocab.to_tokens(
-                    torch.argmax(
-                        pred,
-                        dim=-1).squeeze().numpy().tolist())[-1]
-                if gen == EOS:
+                q = input('user > ').strip()
+                if q == 'quit':
                     break
-                a += gen.replace('▁', ' ')
-                a_tok = tok(a)
-            print("Simsimi > {}".format(a.strip()))
+                q_tok = tok(q)
+                a = ''
+                a_tok = []
+                while 1:
+                    input_ids = torch.LongTensor([
+                        self.vocab[U_TKN]] + self.vocab[q_tok] +
+                        self.vocab[EOS, SENT] + self.vocab[sent_tokens] +
+                        self.vocab[EOS, S_TKN] +
+                        self.vocab[a_tok]).unsqueeze(dim=0)
+                    pred = self(input_ids)
+                    gen = self.vocab.to_tokens(
+                        torch.argmax(
+                            pred,
+                            dim=-1).squeeze().numpy().tolist())[-1]
+                    if gen == EOS:
+                        break
+                    a += gen.replace('▁', ' ')
+                    a_tok = tok(a)
+                print("Simsimi > {}".format(a.strip()))
 
+
+parser = KoGPT2Chat.add_model_specific_args(parser)
+parser = Trainer.add_argparse_args(parser)
+args = parser.parse_args()
+logging.info(args)
 
 if __name__ == "__main__":
-    if opt.train:
+    if args.train:
         checkpoint_callback = ModelCheckpoint(
             filepath='model_chp/{epoch:02d}-{loss:.2f}',
             verbose=True,
@@ -254,14 +239,14 @@ if __name__ == "__main__":
             mode='min',
             prefix='model_'
         )
-        model = KoGPT2Chat(max_len=opt.max_seq_len, batch_size=opt.batch_size, num_epochs=opt.num_epoch)
+        # python train_torch.py --train --gpus 1 --max_epochs 3
+        model = KoGPT2Chat(args)
         model.train()
-        trainer = Trainer(
-            gpus=1, max_epochs=opt.num_epoch,
-            checkpoint_callback=checkpoint_callback)
+        trainer = Trainer.from_argparse_args(
+            args,
+            checkpoint_callback=checkpoint_callback, gradient_clip_val=1.0)
         trainer.fit(model)
         logging.info('best model path {}'.format(checkpoint_callback.best_model_path))
-    if opt.chat:
-        model = KoGPT2Chat.load_from_checkpoint('model_chp/model_last.ckpt')
-        model.freeze()
-        chat(model)
+    if args.chat:
+        model = KoGPT2Chat.load_from_checkpoint(args.model_params)
+        model.chat()

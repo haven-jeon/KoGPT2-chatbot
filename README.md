@@ -34,9 +34,9 @@
 
 ## Install
 
-- `MXNet`은 [링크](https://mxnet.apache.org/get_started?)를 참고하여 시스템에 맞는 버전으로 설치한다.
 
 ```python
+# MXNet은 [링크](https://mxnet.apache.org/get_started?)를 참고하여 시스템에 맞는 버전으로 설치한다.
 pip3 install mxnet-cuXX
 pip3 install gluonnlp sentencepiece pandas torch transformers pytorch_lightning 
 pip3 install git+https://github.com/SKT-AI/KoGPT2#egg=kogpt2
@@ -45,6 +45,15 @@ git clone --recurse-submodules https://github.com/haven-jeon/KoGPT2-chatbot.git
 
 ## How to Train
 
+- PyTorch
+
+```bash
+CUDA_VISIBLE_DEVICES=0 python train_torch.py --gpus 1 --train --max_epochs 2
+```
+
+
+- MXNet
+
 ```bash
 CUDA_VISIBLE_DEVICES=0 python train.py --num-epoch 2 --train
 ```
@@ -52,7 +61,8 @@ CUDA_VISIBLE_DEVICES=0 python train.py --num-epoch 2 --train
 ## How to Chat!
 
 ```bash
-CUDA_VISIBLE_DEVICES=0 python train.py --chat
+# CUDA_VISIBLE_DEVICES=0 python train.py --chat
+CUDA_VISIBLE_DEVICES=0 python train_torch.py --gpus 1 --chat
 user > 방가워용.
 Simsimi > 저도요.
 
