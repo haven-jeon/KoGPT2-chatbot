@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import argparse
 import logging
 
@@ -92,8 +93,7 @@ class CharDataset(Dataset):
         ]
         a_len = len(a_toked)
         if q_len + a_len > self.max_len:
-            remains = self.max_len - q_len
-            a_len = remains
+            a_len = self.max_len - q_len
             a_toked = a_toked[-a_len:]
             assert a_len == len(a_toked)
         # [mask, mask, ...., mask, ..., <bos>,..A.. <eos>, <pad>....]
