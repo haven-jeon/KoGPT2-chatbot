@@ -1,22 +1,4 @@
-
-
-<!-- @import "[TOC]" {cmd="toc" depthFrom=1 depthTo=6 orderedList=false} -->
-
-<!-- code_chunk_output -->
-
-- [Simple Chit-Chat based on KoGPT2](#simple-chit-chat-based-on-kogpt2)
-  - [Purpose](#purpose)
-  - [Architecture](#architecture)
-  - [Install](#install)
-  - [How to Train](#how-to-train)
-  - [How to Chat!](#how-to-chat)
-  - [Colab tutorials](#colab-tutorials)
-  - [TODO](#todo)
-
-<!-- /code_chunk_output -->
-
-
-# Simple Chit-Chat based on KoGPT2 
+# Simple Chit-Chat based on KoGPT2
 
 ## Purpose
 
@@ -36,26 +18,14 @@
 
 
 ```python
-# MXNet은 [링크](https://mxnet.apache.org/get_started?)를 참고하여 시스템에 맞는 버전으로 설치한다.
-pip3 install mxnet-cuXX
-pip3 install gluonnlp sentencepiece pandas torch transformers pytorch_lightning 
-pip3 install git+https://github.com/SKT-AI/KoGPT2#egg=kogpt2
+pip3 install pandas torch transformers pytorch_lightning 
 git clone --recurse-submodules https://github.com/haven-jeon/KoGPT2-chatbot.git
 ```
 
 ## How to Train
 
-- PyTorch
-
 ```bash
 CUDA_VISIBLE_DEVICES=0 python train_torch.py --gpus 1 --train --max_epochs 2
-```
-
-
-- MXNet
-
-```bash
-CUDA_VISIBLE_DEVICES=0 python train.py --num-epoch 2 --train
 ```
 
 ## How to Chat!
@@ -63,40 +33,36 @@ CUDA_VISIBLE_DEVICES=0 python train.py --num-epoch 2 --train
 ```bash
 # CUDA_VISIBLE_DEVICES=0 python train.py --chat
 CUDA_VISIBLE_DEVICES=0 python train_torch.py --gpus 1 --chat
-user > 방가워용.
-Simsimi > 저도요.
+user > 대박 
+Simsimi > 잘 될 거예요.
+
+user > 너 이름이 뭐니?
+Simsimi > 저는 위로봇입니다.
 
 user > 어버이날엔 뭘 하죠?
-Simsimi > 부모님께 효도하는 것도 좋을 것 같아요.
+Simsimi > 저랑 놀아요.
 
-user > 용돈이 너무 적어요.
-Simsimi > 아껴 쓰세요.
+user > 비가와
+Simsimi > 우산 챙기세요.
 
-user > 미친듯이 고민해도 방법이 없네요.
-Simsimi > 좋은 방법이 있을 거예요.
+user > 눈이와
+Simsimi > 눈사람 만들어보세요.
 
-user > 큼지막한 방에서
-Simsimi > 혼자만의 시간을 가지세요.
+user > 천둥이 쳐
+Simsimi > 저도 보고 싶어요.
 
-user > 큰돈을 만드는 방법은?
-Simsimi > 돈을 많이 버는 것뿐이에요.
+user > 봄이왔어.
+Simsimi > 봄은 항상 두근거려요.
 
-user > 집은 너무 비싼거 같아요.
-Simsimi > 비싸다고 해서 다 좋은 건 아니에요.
+user > 배탈났어.
+Simsimi > 얼른 집에 가서 쉬세요.
+
+user > 너를 만든 사람은?
+Simsimi > 당신이 만든 사람이에요.
 ```
 
 ## Colab tutorials
 
 - PyTorch
   - [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/haven-jeon/KoGPT2-chatbot/blob/master/KoGPT2_chatbot_pytorch.ipynb)
-- MXNet
-  - [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/haven-jeon/KoGPT2-chatbot/blob/master/KoGPT2_chatbot.ipynb)
-
-
-
-## TODO
-
-- ~~감정 정보를 조건으로 준 응답 생성~~
-- ~~PyTorch 버전 작업~~
-- 다양한 generation 방식 테스트
 
