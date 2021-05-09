@@ -17,9 +17,10 @@
 ## Install
 
 
-```python
-pip3 install pandas torch transformers pytorch_lightning 
+```bash
 git clone --recurse-submodules https://github.com/haven-jeon/KoGPT2-chatbot.git
+cd KoGPT2-chatbot
+pip3 install -r requirements.txt 
 ```
 
 ## How to Train
