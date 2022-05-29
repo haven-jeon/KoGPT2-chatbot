@@ -5,6 +5,7 @@ import logging
 import numpy as np
 import pandas as pd
 import torch
+from torch import cuda
 from pytorch_lightning import Trainer
 from pytorch_lightning.callbacks import ModelCheckpoint
 from pytorch_lightning.core.lightning import LightningModule
@@ -48,6 +49,8 @@ PAD = '<pad>'
 TOKENIZER = PreTrainedTokenizerFast.from_pretrained("skt/kogpt2-base-v2",
             bos_token=BOS, eos_token=EOS, unk_token='<unk>',
             pad_token=PAD, mask_token=MASK) 
+
+device = 'cuda' if cuda.is_available() else 'cpu'
 
 
 class CharDataset(Dataset):
@@ -201,12 +204,12 @@ class KoGPT2Chat(LightningModule):
                     break
                 a = ''
                 while 1:
-                    input_ids = torch.LongTensor(tok.encode(U_TKN + q + SENT + sent + S_TKN + a)).unsqueeze(dim=0)
+                    input_ids = torch.LongTensor(tok.encode(U_TKN + q + SENT + sent + S_TKN + a)).unsqueeze(dim=0).to(device)
                     pred = self(input_ids)
                     gen = tok.convert_ids_to_tokens(
                         torch.argmax(
                             pred,
-                            dim=-1).squeeze().numpy().tolist())[-1]
+                            dim=-1).squeeze().cpu().numpy().tolist())[-1]
                     if gen == EOS:
                         break
                     a += gen.replace('▁', ' ')
@@ -239,4 +242,5 @@ if __name__ == "__main__":
         logging.info('best model path {}'.format(checkpoint_callback.best_model_path))
     if args.chat:
         model = KoGPT2Chat.load_from_checkpoint(args.model_params)
+        model = model.to(device)
         model.chat()
